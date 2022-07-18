@@ -17,6 +17,15 @@ class Field:
         self.cell_size_y = (screen_height-menu_height)//columns
         self.field = [[0]*rows for y in range(columns)]
 
+class Button:
+    def __init__(self,x,y,width,height,type="ok"):
+        self.x = x
+        self.y= y
+        self.width = width
+        self.height = height
+        self.color = (100,100,100)
+        self.type = type
+
 class Window:
     def __init__(self,text="window",width=300,height=200,x=200,y=200):
         self.width = width
@@ -26,6 +35,8 @@ class Window:
         self.text = text
         self.color = (128,128,128)
         self.isactive = False
+        self.buttons=[]
+
 class Menu:
     def __init__(self,width,height,x,y,text=""):
         self.height = height
@@ -37,7 +48,11 @@ class Menu:
         self.link=[]
         self.isactive = False
         self.text = text
-
+    def is_mouse_touched(self,pos):
+        if self.x < pos[0] < self.x + self.width and self.y < pos[1] < self.y + self.height:
+            return True
+        else:
+            return False
 def coordinates_changer_in_field(pos,field,menu):
     if pos[1]<menu.height or pos[0]<0:
         return None
@@ -55,6 +70,7 @@ def field_value_changer(value,field,menu):
         field.field[pos[1]][pos[0]] = value
 def events_check(field,menu,menu_list):
     global process_running
+    menu_is_touched = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             process_running = False
@@ -66,24 +82,34 @@ def events_check(field,menu,menu_list):
                 pos = pygame.mouse.get_pos()
                 for item in menu_list:
                     if len(item.submenu) == 0 and len(item.link)!=0:
-                        if item.x < pos[0] < item.x + item.width and item.y < pos[1] < item.y + item.height:
+                        if item.is_mouse_touched(pos):
                             item.link[0].isactive = True
                             item.isactive = True
+                            menu_is_touched=True
                             break
                     elif item.isactive:
                         for j in item.submenu:
-                            if j.x< pos[0] < j.x+j.width and j.y< pos[1] < j.y+j.height:
+                            if j.is_mouse_touched(pos):
                                 j.isactive = True
+                                menu_is_touched=True
                                 break
-                field_value_changer(1,field,menu)
-            if event.button == 3:
-                field_value_changer(0, field, menu)
-    keys = pygame.mouse.get_pressed()
-    if keys[0]:
-        field_value_changer(1, field, menu)
-    elif keys[2]:
-        field_value_changer(0, field, menu)
+                if not menu_is_touched:
 
+                    field_value_changer(1,field,menu)
+            if event.button == 3 and not menu_is_touched:
+                field_value_changer(0, field, menu)
+    pos = pygame.mouse.get_pos()
+    for item in menu_list:
+        if len(item.submenu) == 0 and len(item.link) != 0:
+            if item.is_mouse_touched(pos):
+                menu_is_touched = True
+                break
+    if not menu_is_touched:
+        keys = pygame.mouse.get_pressed()
+        if keys[0]:
+            field_value_changer(1, field, menu)
+        elif keys[2]:
+            field_value_changer(0, field, menu)
 def drawing(field,menu,menu_list):
     screen.fill((255, 255, 255))
     #draw field
@@ -136,8 +162,23 @@ def mainloop():
 
     save_menu.link.append(save_window)
     load_menu.link.append(load_window)
+    #block2
+    rows_menu = Menu(menu_width, menu_height, menu_width, menu_height, "rows")
+    columns_menu = Menu(menu_width, menu_height, menu_width, menu_height * 2, "columns")
+    clear_menu = Menu(menu_width, menu_height, menu_width, menu_height * 3, "clear")
+    field_menu.submenu.append(rows_menu)
+    field_menu.submenu.append(columns_menu)
+    field_menu.submenu.append(clear_menu)
 
-    menu_list = [menu,file_menu,save_menu,load_menu]
+    rows_window = Window("rows")
+    columns_window = Window("columns")
+    clear_window = Window("really clear?")
+
+    rows_menu.link.append(rows_window)
+    columns_menu.link.append(columns_window)
+    clear_menu.link.append(clear_window)
+
+    menu_list = [menu,file_menu,save_menu,load_menu,field_menu, rows_menu,columns_menu,clear_menu]
     field = Field(menu.height)
 
     while process_running:
