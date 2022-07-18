@@ -28,6 +28,11 @@ def coordinates_changer_from_field(pos,field,menu):
     new_x = field.cell_size_x*pos[0]
     new_y = menu.height+field.cell_size_y*pos[1]
     return (new_x,new_y)
+def field_value_changer(value,field,menu):
+    pos = pygame.mouse.get_pos()
+    pos = coordinates_changer_in_field(pos, field, menu)
+    if pos:
+        field.field[pos[1]][pos[0]] = value
 def events_check(field,menu):
     global process_running
     for event in pygame.event.get():
@@ -38,16 +43,14 @@ def events_check(field,menu):
                 process_running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                pos = pygame.mouse.get_pos()
-                pos = coordinates_changer_in_field(pos,field,menu)
-                if pos:
-                    field.field[pos[1]][pos[0]] = 1
+                field_value_changer(1,field,menu)
             if event.button == 3:
-                pos = pygame.mouse.get_pos()
-                pos = coordinates_changer_in_field(pos, field, menu)
-                if pos:
-                    field.field[pos[1]][pos[0]] = 0
-
+                field_value_changer(0, field, menu)
+    keys = pygame.mouse.get_pressed()
+    if keys[0]:
+        field_value_changer(1, field, menu)
+    elif keys[2]:
+        field_value_changer(0, field, menu)
 
 def drawing(field,menu):
     screen.fill((255, 255, 255))
