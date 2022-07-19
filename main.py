@@ -41,8 +41,20 @@ class Button:
     def create_exit_button(x,y,width=20,height=20):
         button = Exit_button(x, y, width, height)
         return button
+    @staticmethod
+    def create_ok_button(x, y, width=100, height=20):
+        button = Ok_button(x, y, width, height)
+        return button
     def is_button_touched(self):
         return is_touched(self.x, self.y, self.width, self.height)
+class Ok_button(Button):
+    def __init__(self, x, y, width, height):
+        super(Ok_button, self).__init__(x,y,width,height)
+        self.color = (0,200, 0)
+    def confirm(self,item):
+        del (opened_windows[opened_windows.index(item)])
+    def touch_button(self,pos):
+        return super(Ok_button, self).is_button_touched()
 class Exit_button(Button):
     def __init__(self, x, y, width, height):
         super(Exit_button, self).__init__(x,y,width,height)
@@ -88,7 +100,20 @@ class Window:
     def create_window_slider(text="window",width=300,height=200,x=200,y=200):
         window = Window_slider(text,width,height,x,y)
         return window
-
+    @staticmethod
+    def create_window_ok(text="window",width=300,height=200,x=200,y=200):
+        window = Window_ok(text,width,height,x,y)
+        return window
+class Window_ok(Window):
+    def __init__(self,text,width,height,x,y):
+        super(Window_ok, self).__init__(text,width,height,x,y)
+        self.ok_button = Button()
+        self.ok_button =self.ok_button.create_ok_button((x+width)//3*2-50,(y+height)//5*4,100,20)
+        self.exit = Button()
+        self.exit = self.exit.create_exit_button(x+width-20,y,20,20)
+        self.buttons = [self.ok_button,self.exit]
+    def is_window_touched(self,pos):
+        return super(Window_ok,self).is_window_touched(pos)
 class Window_slider(Window):
     def __init__(self,text,width,height,x,y):
         super(Window_slider, self).__init__(text,width,height,x,y)
@@ -152,10 +177,10 @@ def is_window_touched(item,pos):
     if issubclass(type(item),Window) and type(item) != Window:
         res = item.is_window_touched(pos)
         if res:
-            print("____________")
             return True
     return False
-
+def saving(field):
+    print("_++++++++++++++++_")
 
 def events_check(field,menu,menu_list):
     global process_running
@@ -180,20 +205,24 @@ def events_check(field,menu,menu_list):
                                     if type(button) == Slider_button:
                                         field.field = change_field(field.field,res,len(field.field))
                                         field.cell_size_x = screen_height//len(field.field[0])
-                                    elif type(button) == Exit_button:
-                                        button.exit(i)
-                                        close_menu_items(menu)
-                                        menu.isactive = True
+                                elif type(button) == Exit_button:
+                                    button.exit(i)
+                                    close_menu_items(menu)
+                                    menu.isactive = True
                             elif i.text == "columns":
                                 res = button.touch_button(len(field.field))
                                 if res:
                                     if type(button) == Slider_button:
                                         field.field = change_field(field.field, len(field.field[0]), res)
                                         field.cell_size_y = (screen_height - menu.height) // len(field.field)
-                                    elif type(button) == Exit_button:
-                                        button.exit(i)
-                                        close_menu_items(menu)
-                                        menu.isactive = True
+                                elif type(button) == Exit_button:
+                                    button.exit(i)
+                                    close_menu_items(menu)
+                                    menu.isactive = True
+                            elif i.text == "save":
+                                if type(button) == Ok_button:
+                                    button.confirm(i)
+                                    saving(field)
 
                         menu_is_touched = True
                 for item in menu_list:
@@ -284,10 +313,9 @@ def drawing(field,menu,menu_list):
     #                 pygame.draw.rect(screen,(button.color),(button.x,button.y,button.width,button.height))
     for i in opened_windows:
         pygame.draw.rect(screen, (i.color), (i.x, i.y, i.width, i.height))
-        if type(i) == Window_slider:
-            for x in range(len(i.buttons)):
-                button = i.buttons[x]
-                pygame.draw.rect(screen, (button.color), (button.x, button.y, button.width, button.height))
+        for x in range(len(i.buttons)):
+            button = i.buttons[x]
+            pygame.draw.rect(screen, (button.color), (button.x, button.y, button.width, button.height))
     pygame.display.update()
 
 def mainloop():
@@ -304,15 +332,14 @@ def mainloop():
     menu.isactive = True
     #block1
     save_menu = Menu(menu_width,menu_height,0,menu_height,"save")
-    load_menu = Menu(menu_width,menu_height,0,menu_height*2,"load")
+    # load_menu = Menu(menu_width,menu_height,0,menu_height*2,"load")
     file_menu.submenu.append(save_menu)
-    file_menu.submenu.append(load_menu)
+    # file_menu.submenu.append(load_menu)
 
     save_window = Window("save as")
-    load_window = Window("what kind load?")
+    save_window = save_window.create_window_ok("save")
 
     save_menu.link.append(save_window)
-    load_menu.link.append(load_window)
     #block2
     rows_menu = Menu(menu_width, menu_height, menu_width, menu_height, "rows")
     columns_menu = Menu(menu_width, menu_height, menu_width, menu_height * 2, "columns")
@@ -328,13 +355,13 @@ def mainloop():
     columns_window = Window()
     columns_window = columns_window.create_window_slider("columns")
     clear_window = Window()
-    clear_window = clear_window.create_window_slider("really clear?")
+    clear_window = clear_window.create_window_ok("clear")
 
     rows_menu.link.append(rows_window)
     columns_menu.link.append(columns_window)
     clear_menu.link.append(clear_window)
 
-    menu_list = [menu,file_menu,save_menu,load_menu,field_menu, rows_menu,columns_menu,clear_menu]
+    menu_list = [menu,file_menu,save_menu,field_menu, rows_menu,columns_menu,clear_menu]
 
     while process_running:
         events_check(field,menu,menu_list)
