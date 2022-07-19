@@ -11,6 +11,13 @@ pygame.font.init()
 font = pygame.font.SysFont("Times New Roman",19)
 # font = pygame.font.SysFont("comicsansms", 40)
 fps = 60
+opened_windows=[]
+def is_touched(x,y,width,height,pos):
+    if x < pos[0] < x + width and y < pos[1] < y + height:
+        return True
+    else:
+        return False
+
 class Field:
     def __init__(self,menu_height,rows=10,columns=10):
         self.cell_size_x = screen_width//rows
@@ -29,15 +36,14 @@ class Button:
     def create_slider_button(x,y,width,height,type="less"):
         button = Slider_button(x,y,width,height,type)
         return button
+    def is_button_touched(self,pos):
+        return is_touched(self.x, self.y, self.width, self.height, pos)
 class Slider_button(Button):
     def __init__(self,x,y,width,height,type):
         super(Slider_button, self).__init__(x,y,width,height)
         self.type = type
     def is_button_touched(self,pos):
-        if self.x < pos[0] < self.x + self.width and self.y < pos[1] < self.y + self.height:
-            return True
-        else:
-            return False
+        return super(Slider_button, self).is_button_touched(pos)
     def touch_button(self,value):
         pos = pygame.mouse.get_pos()
         if self.is_button_touched(pos):
@@ -53,6 +59,7 @@ class Slider_button(Button):
         else:
             return None
 
+
 class Window:
     def __init__(self,text="window",width=300,height=200,x=200,y=200):
         self.width = width
@@ -62,6 +69,9 @@ class Window:
         self.text = text
         self.color = (128,128,128)
         self.isactive = False
+    def is_window_touched(self,pos):
+        return is_touched(self.x, self.y, self.width, self.height, pos)
+
     @staticmethod
     def create_window_slider(text="window",width=300,height=200,x=200,y=200):
         window = Window_slider(text,width,height,x,y)
@@ -75,6 +85,8 @@ class Window_slider(Window):
         self.more_buton = Button()
         self.more_buton = self.less_buton.create_slider_button(x+width-20-(width//8),y+20,width//8,height//3,"more")
         self.buttons = [self.less_buton,self.more_buton]
+    def is_window_touched(self,pos):
+        return super(Window_slider,self).is_window_touched(pos)
 class Menu:
     def __init__(self,width,height,x,y,text=""):
         self.height = height
@@ -87,10 +99,7 @@ class Menu:
         self.isactive = False
         self.text = text
     def is_mouse_touched(self,pos):
-        if self.x < pos[0] < self.x + self.width and self.y < pos[1] < self.y + self.height:
-            return True
-        else:
-            return False
+        return is_touched(self.x,self.y,self.width,self.height,pos)
 def coordinates_changer_in_field(pos,field,menu):
     if pos[1]<menu.height or pos[0]<0 or pos[0] >= field.cell_size_x*len(field.field[0]) or pos[1] >= field.cell_size_y*len(field.field):
         return None
@@ -119,9 +128,25 @@ def close_menu_items(item):
     for i in item.submenu:
         i.isactive=False
         close_menu_items(i)
+def is_menu_touched(item,pos):
+    # for i in menu_list:
+    if item.isactive and type(item)==Menu and item.is_mouse_touched(pos):
+        return True
+    return False
+def is_window_touched(item,pos):
+    # for i in menu_list:
+    if issubclass(type(item),Window) and type(item) != Window:
+        res = item.is_window_touched(pos)
+        if res:
+            print("____________")
+            return True
+    return False
+
+
 def events_check(field,menu,menu_list):
     global process_running
     menu_is_touched = False
+    pos = pygame.mouse.get_pos()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             process_running = False
@@ -130,33 +155,30 @@ def events_check(field,menu,menu_list):
                 process_running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                pos = pygame.mouse.get_pos()
-                for i in menu_list:
-                    if i.isactive and len(i.link) > 0 and i.link[0].isactive:
-                        if type(i.link[0]) == Window_slider:
-                            for x in range(len(i.link[0].buttons)):
-                                button = i.link[0].buttons[x]
-                                if i.link[0].text == "rows":
-                                    res = button.touch_button(len(field.field[0]))
-                                    if res:
-                                        field.field = change_field(field.field,res,len(field.field))
-                                        field.cell_size_x = screen_height//len(field.field[0])
 
-                                        menu_is_touched = True
-                                        break
-                                elif i.link[0].text == "columns":
-                                    res = button.touch_button(len(field.field))
-                                    if res:
-                                        field.field = change_field(field.field, len(field.field[0]), res)
-
-                                        field.cell_size_y = (screen_height - menu.height) // len(field.field)
-                                        menu_is_touched = True
-                                        break
+                for i in opened_windows:
+                    if is_window_touched(i,pos):
+                        for x in range(len(i.buttons)):
+                            button = i.buttons[x]
+                            if i.text == "rows":
+                                res = button.touch_button(len(field.field[0]))
+                                if res:
+                                    field.field = change_field(field.field,res,len(field.field))
+                                    field.cell_size_x = screen_height//len(field.field[0])
+                            elif i.text == "columns":
+                                res = button.touch_button(len(field.field))
+                                if res:
+                                    field.field = change_field(field.field, len(field.field[0]), res)
+                                    field.cell_size_y = (screen_height - menu.height) // len(field.field)
+                        menu_is_touched = True
                 for item in menu_list:
-                    if len(item.submenu) == 0 and len(item.link)!=0:
+                    if len(item.link)!=0:
                         if item.is_mouse_touched(pos):
                             item.link[0].isactive = True
-                            item.isactive = True
+                            opened_windows.append(item.link[0])
+                            close_menu_items(menu)
+                            menu.isactive=True
+                            # item.isactive = True
                             menu_is_touched=True
                             break
                     elif item.isactive:
@@ -170,22 +192,33 @@ def events_check(field,menu,menu_list):
                                 break
                 if not menu_is_touched:
                     field_value_changer(1,field,menu)
-            if event.button == 3 and not menu_is_touched:
-                field_value_changer(0, field, menu)
-    pos = pygame.mouse.get_pos()
-    for item in menu_list:
-        if item.isactive and len(item.link) > 0 and item.link[0].isactive:
-            if type(item.link[0]) == Window_slider:
-                for x in range(len(item.link[0].buttons)):
-                    button = item.link[0].buttons[x]
-                    res = button.touch_button(len(field.field[0]))
-                    if res:
+            if event.button == 3:
+                for i in opened_windows:
+                    if is_window_touched(i,pos):
                         menu_is_touched = True
                         break
-        if len(item.submenu) == 0 and len(item.link) != 0:
-            if item.is_mouse_touched(pos):
+                if not menu_is_touched:
+                    for item in menu_list:
+                        if len(item.submenu) == 0 and len(item.link)!=0:
+                            if item.is_mouse_touched(pos):
+                                menu_is_touched=True
+                                break
+                        elif item.isactive:
+                            if item.is_mouse_touched(pos):
+                                menu_is_touched = True
+                                break
+                if not menu_is_touched:
+                    field_value_changer(0, field, menu)
+    for i in opened_windows:
+        if is_window_touched(i, pos):
+            menu_is_touched = True
+            break
+    if not menu_is_touched:
+        for i in menu_list:
+            if is_menu_touched(i,pos):
                 menu_is_touched = True
                 break
+
     if not menu_is_touched:
         keys = pygame.mouse.get_pressed()
         if keys[0]:
@@ -217,13 +250,19 @@ def drawing(field,menu,menu_list):
                 surface = font.render(j.text,False,(255,255,255))
                 screen.blit(surface,(j.x,j.y))
     #draw windows
-    for i in menu_list:
-        if i.isactive and len(i.link)>0 and i.link[0].isactive:
-            pygame.draw.rect(screen,(i.link[0].color),(i.link[0].x,i.link[0].y,i.link[0].width,i.link[0].height))
-            if type(i.link[0]) == Window_slider:
-                for x in range(len(i.link[0].buttons)):
-                    button = i.link[0].buttons[x]
-                    pygame.draw.rect(screen,(button.color),(button.x,button.y,button.width,button.height))
+    # for i in menu_list:
+    #     if i.isactive and len(i.link)>0 and i.link[0].isactive:
+    #         pygame.draw.rect(screen,(i.link[0].color),(i.link[0].x,i.link[0].y,i.link[0].width,i.link[0].height))
+    #         if type(i.link[0]) == Window_slider:
+    #             for x in range(len(i.link[0].buttons)):
+    #                 button = i.link[0].buttons[x]
+    #                 pygame.draw.rect(screen,(button.color),(button.x,button.y,button.width,button.height))
+    for i in opened_windows:
+        pygame.draw.rect(screen, (i.color), (i.x, i.y, i.width, i.height))
+        if type(i) == Window_slider:
+            for x in range(len(i.buttons)):
+                button = i.buttons[x]
+                pygame.draw.rect(screen, (button.color), (button.x, button.y, button.width, button.height))
     pygame.display.update()
 
 def mainloop():
