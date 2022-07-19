@@ -18,13 +18,38 @@ class Field:
         self.field = [[0]*rows for y in range(columns)]
 
 class Button:
-    def __init__(self,x,y,width,height,type="ok"):
+    def __init__(self,x=200,y=200,width=20,height=20):
         self.x = x
         self.y= y
         self.width = width
         self.height = height
         self.color = (100,100,100)
         self.type = type
+    @staticmethod
+    def create_slider_button(x,y,width,height,type="less"):
+        button = Slider_button(x,y,width,height,type)
+        return button
+class Slider_button(Button):
+    def __init__(self,x,y,width,height,type):
+        super(Slider_button, self).__init__(x,y,width,height)
+        self.type = type
+    def is_button_touched(self,pos):
+        if self.x < pos[0] < self.x + self.width and self.y < pos[1] < self.y + self.height:
+            return True
+        else:
+            return False
+    def touch_button(self,value):
+        pos = pygame.mouse.get_pos()
+        if self.is_button_touched(pos):
+            if self.type == "less":
+                value -=1
+                if value >0:
+                    return value
+                else:
+                    return 1
+            else:
+                value += 1
+                return value
 
 class Window:
     def __init__(self,text="window",width=300,height=200,x=200,y=200):
@@ -35,8 +60,20 @@ class Window:
         self.text = text
         self.color = (128,128,128)
         self.isactive = False
-        self.buttons=[]
+    @staticmethod
+    def create_window_slider(value,text="window",width=300,height=200,x=200,y=200):
+        window = Window_slider(value,text,width,height,x,y)
+        return window
 
+class Window_slider(Window):
+    def __init__(self,value,text,width,height,x,y):
+        super(Window_slider, self).__init__(text,width,height,x,y)
+        self.less_buton = Button()
+        self.less_buton = self.less_buton.create_slider_button(x+20,y+20,width//8,height//3,"less")
+        self.more_buton = Button()
+        self.more_buton = self.less_buton.create_slider_button(x+width-20-(width//8),y+20,width//8,height//3,"more")
+        self.buttons = [self.less_buton,self.more_buton]
+        self.value = value
 class Menu:
     def __init__(self,width,height,x,y,text=""):
         self.height = height
@@ -137,6 +174,9 @@ def drawing(field,menu,menu_list):
     for i in menu_list:
         if i.isactive and len(i.link)>0 and i.link[0].isactive:
             pygame.draw.rect(screen,(i.link[0].color),(i.link[0].x,i.link[0].y,i.link[0].width,i.link[0].height))
+            for x in range(len(i.link[0].buttons)):
+                button = i.link[0].buttons[x]
+                pygame.draw.rect(screen,(button.color),(button.x,button.y,button.width,button.height))
     pygame.display.update()
 
 def mainloop():
@@ -170,21 +210,25 @@ def mainloop():
     field_menu.submenu.append(columns_menu)
     field_menu.submenu.append(clear_menu)
 
-    rows_window = Window("rows")
-    columns_window = Window("columns")
-    clear_window = Window("really clear?")
+    field = Field(menu.height)
+
+    rows_window = Window()
+    rows_window = rows_window.create_window_slider(len(field.field[0]),"rows")
+    columns_window = Window()
+    columns_window = columns_window.create_window_slider(len(field.field),"columns")
+    clear_window = Window()
+    clear_window = clear_window.create_window_slider("really clear?")
 
     rows_menu.link.append(rows_window)
     columns_menu.link.append(columns_window)
     clear_menu.link.append(clear_window)
 
     menu_list = [menu,file_menu,save_menu,load_menu,field_menu, rows_menu,columns_menu,clear_menu]
-    field = Field(menu.height)
 
     while process_running:
         events_check(field,menu,menu_list)
         drawing(field,menu,menu_list)
-        print(file_menu.isactive)
+        print(rows_window.buttons)
         pygame.time.delay(fps)
 if __name__ == '__main__':
     mainloop()
