@@ -91,34 +91,6 @@ class Menu:
             return True
         else:
             return False
-def coordinates_changer_in_field(pos,field,menu):
-    if pos[1]<menu.height or pos[0]<0 or pos[0] >= field.cell_size_x*len(field.field[0]) or pos[1] >= field.cell_size_y*len(field.field):
-        return None
-    new_y = (pos[1]-menu.height)//field.cell_size_y
-    new_x = pos[0]//field.cell_size_x
-    return (new_x,new_y)
-def coordinates_changer_from_field(pos,field,menu):
-    if pos[0]>=len(field.field[0]) or pos[1]>=len(field.field) or pos[0] <0 or pos[1]<0:
-        return None
-    new_x = field.cell_size_x*pos[0]
-    new_y = menu.height+field.cell_size_y*pos[1]
-    return (new_x,new_y)
-def field_value_changer(value,field,menu):
-    pos = pygame.mouse.get_pos()
-    pos = coordinates_changer_in_field(pos, field, menu)
-    if pos:
-        field.field[pos[1]][pos[0]] = value
-def change_field(field,x,y):
-    new_field = [[0]*x for i in range(y)]
-    for y in range(len(field)):
-        for x in range(len(field[y])):
-            if y<len(new_field)-1 and x<len(field[0])-1:
-                new_field[y][x] = field[y][x]
-    return new_field
-def close_menu_items(item):
-    for i in item.submenu:
-        i.isactive=False
-        close_menu_items(i)
 def events_check(field,menu,menu_list):
     global process_running
     menu_is_touched = False
@@ -133,25 +105,24 @@ def events_check(field,menu,menu_list):
                 pos = pygame.mouse.get_pos()
                 for i in menu_list:
                     if i.isactive and len(i.link) > 0 and i.link[0].isactive:
-                        if type(i.link[0]) == Window_slider:
-                            for x in range(len(i.link[0].buttons)):
-                                button = i.link[0].buttons[x]
-                                if i.link[0].text == "rows":
-                                    res = button.touch_button(len(field.field[0]))
-                                    if res:
-                                        field.field = change_field(field.field,res,len(field.field))
-                                        field.cell_size_x = screen_height//len(field.field[0])
+                        for x in range(len(i.link[0].buttons)):
+                            button = i.link[0].buttons[x]
+                            if i.link[0].text == "rows":
+                                res = button.touch_button(len(field.field[0]))
+                                if res:
+                                    field.field = change_field(field.field,res,len(field.field))
+                                    field.cell_size_x = screen_height//len(field.field[0])
 
-                                        menu_is_touched = True
-                                        break
-                                elif i.link[0].text == "columns":
-                                    res = button.touch_button(len(field.field))
-                                    if res:
-                                        field.field = change_field(field.field, len(field.field[0]), res)
+                                    menu_is_touched = True
+                                    break
+                            elif i.link[0].text == "columns":
+                                res = button.touch_button(len(field.field))
+                                if res:
+                                    field.field = change_field(field.field, len(field.field[0]), res)
 
-                                        field.cell_size_y = (screen_height - menu.height) // len(field.field)
-                                        menu_is_touched = True
-                                        break
+                                    field.cell_size_y = (screen_height - menu.height) // len(field.field)
+                                    menu_is_touched = True
+                                    break
                 for item in menu_list:
                     if len(item.submenu) == 0 and len(item.link)!=0:
                         if item.is_mouse_touched(pos):
@@ -162,13 +133,11 @@ def events_check(field,menu,menu_list):
                     elif item.isactive:
                         for j in item.submenu:
                             if j.is_mouse_touched(pos):
-                                if j.isactive:
-                                    close_menu_items(item)
-                                else:
-                                    j.isactive = True
+                                j.isactive = True
                                 menu_is_touched=True
                                 break
                 if not menu_is_touched:
+
                     field_value_changer(1,field,menu)
             if event.button == 3 and not menu_is_touched:
                 field_value_changer(0, field, menu)
@@ -231,16 +200,16 @@ def mainloop():
     # describe menu
     menu_width = 100
     menu_height = 20
-    menu = Menu(screen_width,20,0,0)
-    #block 0
-    file_menu= Menu(menu_width,menu_height,0,0,"file")
-    field_menu= Menu(menu_width,menu_height,menu_width,0,"field")
+    menu = Menu(screen_width, 20, 0, 0)
+    # block 0
+    file_menu = Menu(menu_width, menu_height, 0, 0, "file")
+    field_menu = Menu(menu_width, menu_height, menu_width, 0, "field")
     menu.submenu.append(file_menu)
     menu.submenu.append(field_menu)
     menu.isactive = True
-    #block1
-    save_menu = Menu(menu_width,menu_height,0,menu_height,"save")
-    load_menu = Menu(menu_width,menu_height,0,menu_height*2,"load")
+    # block1
+    save_menu = Menu(menu_width, menu_height, 0, menu_height, "save")
+    load_menu = Menu(menu_width, menu_height, 0, menu_height * 2, "load")
     file_menu.submenu.append(save_menu)
     file_menu.submenu.append(load_menu)
 
@@ -249,7 +218,7 @@ def mainloop():
 
     save_menu.link.append(save_window)
     load_menu.link.append(load_window)
-    #block2
+    # block2
     rows_menu = Menu(menu_width, menu_height, menu_width, menu_height, "rows")
     columns_menu = Menu(menu_width, menu_height, menu_width, menu_height * 2, "columns")
     clear_menu = Menu(menu_width, menu_height, menu_width, menu_height * 3, "clear")
@@ -270,7 +239,7 @@ def mainloop():
     columns_menu.link.append(columns_window)
     clear_menu.link.append(clear_window)
 
-    menu_list = [menu,file_menu,save_menu,load_menu,field_menu, rows_menu,columns_menu,clear_menu]
+    menu_list = [menu, file_menu, save_menu, load_menu, field_menu, rows_menu, columns_menu, clear_menu]
 
     while process_running:
         events_check(field,menu,menu_list)
