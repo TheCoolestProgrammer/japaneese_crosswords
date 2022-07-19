@@ -12,7 +12,8 @@ font = pygame.font.SysFont("Times New Roman",19)
 # font = pygame.font.SysFont("comicsansms", 40)
 fps = 60
 opened_windows=[]
-def is_touched(x,y,width,height,pos):
+def is_touched(x,y,width,height):
+    pos = pygame.mouse.get_pos()
     if x < pos[0] < x + width and y < pos[1] < y + height:
         return True
     else:
@@ -36,17 +37,28 @@ class Button:
     def create_slider_button(x,y,width,height,type="less"):
         button = Slider_button(x,y,width,height,type)
         return button
-    def is_button_touched(self,pos):
-        return is_touched(self.x, self.y, self.width, self.height, pos)
+    @staticmethod
+    def create_exit_button(x,y,width=20,height=20):
+        button = Exit_button(x, y, width, height)
+        return button
+    def is_button_touched(self):
+        return is_touched(self.x, self.y, self.width, self.height)
+class Exit_button(Button):
+    def __init__(self, x, y, width, height):
+        super(Exit_button, self).__init__(x,y,width,height)
+        self.color = (200,0,0)
+    def exit(self,item):
+        del(opened_windows[opened_windows.index(item)])
+    def touch_button(self,pos):
+        return super(Exit_button, self).is_button_touched()
 class Slider_button(Button):
     def __init__(self,x,y,width,height,type):
         super(Slider_button, self).__init__(x,y,width,height)
         self.type = type
-    def is_button_touched(self,pos):
-        return super(Slider_button, self).is_button_touched(pos)
+    def is_button_touched(self):
+        return super(Slider_button, self).is_button_touched()
     def touch_button(self,value):
-        pos = pygame.mouse.get_pos()
-        if self.is_button_touched(pos):
+        if self.is_button_touched():
             if self.type == "less":
                 value -=1
                 if value >0:
@@ -70,7 +82,7 @@ class Window:
         self.color = (128,128,128)
         self.isactive = False
     def is_window_touched(self,pos):
-        return is_touched(self.x, self.y, self.width, self.height, pos)
+        return is_touched(self.x, self.y, self.width, self.height)
 
     @staticmethod
     def create_window_slider(text="window",width=300,height=200,x=200,y=200):
@@ -84,7 +96,9 @@ class Window_slider(Window):
         self.less_buton = self.less_buton.create_slider_button(x+20,y+20,width//8,height//3,"less")
         self.more_buton = Button()
         self.more_buton = self.less_buton.create_slider_button(x+width-20-(width//8),y+20,width//8,height//3,"more")
-        self.buttons = [self.less_buton,self.more_buton]
+        exit_button = Button()
+        self.exit_button = exit_button.create_exit_button(x+width-20,y,20,20)
+        self.buttons = [self.less_buton,self.more_buton,self.exit_button]
     def is_window_touched(self,pos):
         return super(Window_slider,self).is_window_touched(pos)
 class Menu:
@@ -99,7 +113,7 @@ class Menu:
         self.isactive = False
         self.text = text
     def is_mouse_touched(self,pos):
-        return is_touched(self.x,self.y,self.width,self.height,pos)
+        return is_touched(self.x,self.y,self.width,self.height)
 def coordinates_changer_in_field(pos,field,menu):
     if pos[1]<menu.height or pos[0]<0 or pos[0] >= field.cell_size_x*len(field.field[0]) or pos[1] >= field.cell_size_y*len(field.field):
         return None
@@ -163,21 +177,32 @@ def events_check(field,menu,menu_list):
                             if i.text == "rows":
                                 res = button.touch_button(len(field.field[0]))
                                 if res:
-                                    field.field = change_field(field.field,res,len(field.field))
-                                    field.cell_size_x = screen_height//len(field.field[0])
+                                    if type(button) == Slider_button:
+                                        field.field = change_field(field.field,res,len(field.field))
+                                        field.cell_size_x = screen_height//len(field.field[0])
+                                    elif type(button) == Exit_button:
+                                        button.exit(i)
+                                        close_menu_items(menu)
+                                        menu.isactive = True
                             elif i.text == "columns":
                                 res = button.touch_button(len(field.field))
                                 if res:
-                                    field.field = change_field(field.field, len(field.field[0]), res)
-                                    field.cell_size_y = (screen_height - menu.height) // len(field.field)
+                                    if type(button) == Slider_button:
+                                        field.field = change_field(field.field, len(field.field[0]), res)
+                                        field.cell_size_y = (screen_height - menu.height) // len(field.field)
+                                    elif type(button) == Exit_button:
+                                        button.exit(i)
+                                        close_menu_items(menu)
+                                        menu.isactive = True
+
                         menu_is_touched = True
                 for item in menu_list:
-                    if len(item.link)!=0:
+                    if item.isactive and len(item.link)!=0:
                         if item.is_mouse_touched(pos):
                             item.link[0].isactive = True
                             opened_windows.append(item.link[0])
                             close_menu_items(menu)
-                            menu.isactive=True
+                            # menu.isactive=True
                             # item.isactive = True
                             menu_is_touched=True
                             break
@@ -314,7 +339,9 @@ def mainloop():
     while process_running:
         events_check(field,menu,menu_list)
         drawing(field,menu,menu_list)
-        print(field.cell_size_y)
+        # for i in menu_list:
+        #     print(i.isactive,end=" ")
+        # print()
         pygame.time.delay(fps)
 if __name__ == '__main__':
     mainloop()
