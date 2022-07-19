@@ -50,6 +50,8 @@ class Slider_button(Button):
             else:
                 value += 1
                 return value
+        else:
+            return None
 
 class Window:
     def __init__(self,text="window",width=300,height=200,x=200,y=200):
@@ -61,19 +63,18 @@ class Window:
         self.color = (128,128,128)
         self.isactive = False
     @staticmethod
-    def create_window_slider(value,text="window",width=300,height=200,x=200,y=200):
-        window = Window_slider(value,text,width,height,x,y)
+    def create_window_slider(text="window",width=300,height=200,x=200,y=200):
+        window = Window_slider(text,width,height,x,y)
         return window
 
 class Window_slider(Window):
-    def __init__(self,value,text,width,height,x,y):
+    def __init__(self,text,width,height,x,y):
         super(Window_slider, self).__init__(text,width,height,x,y)
         self.less_buton = Button()
         self.less_buton = self.less_buton.create_slider_button(x+20,y+20,width//8,height//3,"less")
         self.more_buton = Button()
         self.more_buton = self.less_buton.create_slider_button(x+width-20-(width//8),y+20,width//8,height//3,"more")
         self.buttons = [self.less_buton,self.more_buton]
-        self.value = value
 class Menu:
     def __init__(self,width,height,x,y,text=""):
         self.height = height
@@ -91,12 +92,14 @@ class Menu:
         else:
             return False
 def coordinates_changer_in_field(pos,field,menu):
-    if pos[1]<menu.height or pos[0]<0:
+    if pos[1]<menu.height or pos[0]<0 or pos[0] >= field.cell_size_x*len(field.field[0]) or pos[1] >= field.cell_size_y*len(field.field):
         return None
     new_y = (pos[1]-menu.height)//field.cell_size_y
     new_x = pos[0]//field.cell_size_x
     return (new_x,new_y)
 def coordinates_changer_from_field(pos,field,menu):
+    if pos[0]>=len(field.field[0]) or pos[1]>=len(field.field) or pos[0] <0 or pos[1]<0:
+        return None
     new_x = field.cell_size_x*pos[0]
     new_y = menu.height+field.cell_size_y*pos[1]
     return (new_x,new_y)
@@ -105,6 +108,13 @@ def field_value_changer(value,field,menu):
     pos = coordinates_changer_in_field(pos, field, menu)
     if pos:
         field.field[pos[1]][pos[0]] = value
+def change_field(field,x,y):
+    new_field = [[0]*x for i in range(y)]
+    for y in range(len(field)):
+        for x in range(len(field[y])):
+            if y<len(new_field)-1 and x<len(field[0])-1:
+                new_field[y][x] = field[y][x]
+    return new_field
 def events_check(field,menu,menu_list):
     global process_running
     menu_is_touched = False
@@ -117,6 +127,26 @@ def events_check(field,menu,menu_list):
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 pos = pygame.mouse.get_pos()
+                for i in menu_list:
+                    if i.isactive and len(i.link) > 0 and i.link[0].isactive:
+                        for x in range(len(i.link[0].buttons)):
+                            button = i.link[0].buttons[x]
+                            if i.link[0].text == "rows":
+                                res = button.touch_button(len(field.field[0]))
+                                if res:
+                                    field.field = change_field(field.field,res,len(field.field))
+                                    field.cell_size_x = screen_height//len(field.field[0])
+
+                                    menu_is_touched = True
+                                    break
+                            elif i.link[0].text == "columns":
+                                res = button.touch_button(len(field.field))
+                                if res:
+                                    field.field = change_field(field.field, len(field.field[0]), res)
+
+                                    field.cell_size_y = (screen_height - menu.height) // len(field.field)
+                                    menu_is_touched = True
+                                    break
                 for item in menu_list:
                     if len(item.submenu) == 0 and len(item.link)!=0:
                         if item.is_mouse_touched(pos):
@@ -137,6 +167,14 @@ def events_check(field,menu,menu_list):
                 field_value_changer(0, field, menu)
     pos = pygame.mouse.get_pos()
     for item in menu_list:
+        if item.isactive and len(item.link) > 0 and item.link[0].isactive:
+            if type(item.link[0]) == Window_slider:
+                for x in range(len(item.link[0].buttons)):
+                    button = item.link[0].buttons[x]
+                    res = button.touch_button(len(field.field[0]))
+                    if res:
+                        menu_is_touched = True
+                        break
         if len(item.submenu) == 0 and len(item.link) != 0:
             if item.is_mouse_touched(pos):
                 menu_is_touched = True
@@ -154,7 +192,8 @@ def drawing(field,menu,menu_list):
         pygame.draw.line(screen,(0,0,0),(0,y),(screen_width,y),3)
     for x in range(0,screen_width,field.cell_size_x):
         pygame.draw.line(screen,(0,0,0),(x,0),(x,screen_height),3)
-
+    # for x in range(0,len(field.field[0])):
+    #
     for y in range(len(field.field)):
         for x in range(len(field.field[y])):
             if field.field[y][x] == 1:
@@ -174,9 +213,10 @@ def drawing(field,menu,menu_list):
     for i in menu_list:
         if i.isactive and len(i.link)>0 and i.link[0].isactive:
             pygame.draw.rect(screen,(i.link[0].color),(i.link[0].x,i.link[0].y,i.link[0].width,i.link[0].height))
-            for x in range(len(i.link[0].buttons)):
-                button = i.link[0].buttons[x]
-                pygame.draw.rect(screen,(button.color),(button.x,button.y,button.width,button.height))
+            if type(i.link[0]) == Window_slider:
+                for x in range(len(i.link[0].buttons)):
+                    button = i.link[0].buttons[x]
+                    pygame.draw.rect(screen,(button.color),(button.x,button.y,button.width,button.height))
     pygame.display.update()
 
 def mainloop():
@@ -213,9 +253,9 @@ def mainloop():
     field = Field(menu.height)
 
     rows_window = Window()
-    rows_window = rows_window.create_window_slider(len(field.field[0]),"rows")
+    rows_window = rows_window.create_window_slider("rows")
     columns_window = Window()
-    columns_window = columns_window.create_window_slider(len(field.field),"columns")
+    columns_window = columns_window.create_window_slider("columns")
     clear_window = Window()
     clear_window = clear_window.create_window_slider("really clear?")
 
@@ -228,7 +268,7 @@ def mainloop():
     while process_running:
         events_check(field,menu,menu_list)
         drawing(field,menu,menu_list)
-        print(rows_window.buttons)
+        print(field.cell_size_y)
         pygame.time.delay(fps)
 if __name__ == '__main__':
     mainloop()
