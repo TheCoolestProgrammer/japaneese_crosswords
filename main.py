@@ -1,4 +1,5 @@
 import pygame
+import xlrd,xlwt
 
 process_running=True
 
@@ -181,6 +182,51 @@ def is_window_touched(item,pos):
     return False
 def saving(field):
     print("_++++++++++++++++_")
+    horisontal_lines=[]
+    for i in field.field:
+        line = []
+        counter=0
+        for j in i:
+            if j == 0:
+                if counter !=0:
+                    line.append(counter)
+                counter=0
+            else:
+                counter+=1
+        if i[-1]==1:
+            line.append(counter)
+        horisontal_lines.append(line)
+    vertical_lines=[]
+    for i in range(len(field.field[0])):
+        line = []
+        counter=0
+        for j in range(len(field.field)):
+            if field.field[j][i] == 0:
+                if counter != 0:
+                    line.append(counter)
+                counter = 0
+            else:
+                counter += 1
+        if field.field[-1][i]==1:
+            line.append(counter)
+        vertical_lines.append(line)
+    maximal_vertical_length=0
+    maximal_horisontal_length=0
+    for i in vertical_lines:
+        if len(i)>maximal_vertical_length:
+            maximal_vertical_length=len(i)
+    for i in horisontal_lines:
+        if len(i) > maximal_horisontal_length:
+            maximal_horisontal_length = len(i)
+    wb = xlwt.Workbook()
+    ws = wb.add_sheet("crossword")
+    for y in range(len(horisontal_lines)):
+        for x in range(len(horisontal_lines[y])):
+            ws.write(y+maximal_vertical_length, x+ maximal_horisontal_length - len(horisontal_lines[y]),horisontal_lines[y][x])
+    for x in range(len(vertical_lines)):
+        for y in range(len(vertical_lines[x])):
+            ws.write(y + maximal_vertical_length - len(vertical_lines[x]),x + maximal_horisontal_length,vertical_lines[x][y])
+    wb.save("crossword.xls")
 
 def events_check(field,menu,menu_list):
     global process_running
