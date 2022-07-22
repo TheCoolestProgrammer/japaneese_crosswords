@@ -1,5 +1,6 @@
 import pygame
 import xlrd,xlwt
+from pathlib import Path
 
 process_running=True
 
@@ -226,7 +227,12 @@ def saving(field):
     for x in range(len(vertical_lines)):
         for y in range(len(vertical_lines[x])):
             ws.write(y + maximal_vertical_length - len(vertical_lines[x]),x + maximal_horisontal_length,vertical_lines[x][y])
-    wb.save("crossword.xls")
+    folder = Path("projects/")
+    counter=0
+    for i in folder.iterdir():
+        if "crossword" in str(i) and ".xls" in str(i):
+            counter+=1
+    wb.save(f"projects/crossword{counter}.xls")
 
 def events_check(field,menu,menu_list):
     global process_running
