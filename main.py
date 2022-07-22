@@ -162,7 +162,7 @@ def change_field(field,x,y):
     new_field = [[0]*x for i in range(y)]
     for y in range(len(field)):
         for x in range(len(field[y])):
-            if y<len(new_field)-1 and x<len(field[0])-1:
+            if y<len(new_field) and x<len(field[0])-1:
                 new_field[y][x] = field[y][x]
     return new_field
 def close_menu_items(item):
