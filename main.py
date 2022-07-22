@@ -197,6 +197,7 @@ def events_check(field,menu,menu_list):
 
                 for i in opened_windows:
                     if is_window_touched(i,pos):
+                        print("_____________________________________")
                         for x in range(len(i.buttons)):
                             button = i.buttons[x]
                             if i.text == "rows":
@@ -205,24 +206,27 @@ def events_check(field,menu,menu_list):
                                     if type(button) == Slider_button:
                                         field.field = change_field(field.field,res,len(field.field))
                                         field.cell_size_x = screen_height//len(field.field[0])
-                                elif type(button) == Exit_button:
-                                    button.exit(i)
-                                    close_menu_items(menu)
-                                    menu.isactive = True
+                                    elif type(button) == Exit_button:
+                                        print("___________________________")
+                                        button.exit(i)
+                                        close_menu_items(menu)
+                                        menu.isactive = True
                             elif i.text == "columns":
                                 res = button.touch_button(len(field.field))
                                 if res:
                                     if type(button) == Slider_button:
                                         field.field = change_field(field.field, len(field.field[0]), res)
                                         field.cell_size_y = (screen_height - menu.height) // len(field.field)
-                                elif type(button) == Exit_button:
-                                    button.exit(i)
-                                    close_menu_items(menu)
-                                    menu.isactive = True
+                                    elif type(button) == Exit_button:
+                                        button.exit(i)
+                                        close_menu_items(menu)
+                                        menu.isactive = True
                             elif i.text == "save":
-                                if type(button) == Ok_button:
-                                    button.confirm(i)
-                                    saving(field)
+                                res = button.touch_button(len(field.field))
+                                if res:
+                                    if type(button) == Ok_button:
+                                        button.confirm(i)
+                                        saving(field)
 
                         menu_is_touched = True
                 for item in menu_list:
