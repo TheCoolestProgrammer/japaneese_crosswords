@@ -282,6 +282,16 @@ def events_check(field,menu,menu_list):
                                         button.exit(i)
                                         close_menu_items(menu)
                                         menu.isactive = True
+                            elif i.text == "clear":
+                                res = button.touch_button(len(field.field))
+                                if res:
+                                    if type(button) == Ok_button:
+                                        button.confirm(i)
+                                        field.field = [[0]*len(field.field[0]) for i in range(len(field.field))]
+                                    elif type(button) == Exit_button:
+                                        button.exit(i)
+                                        close_menu_items(menu)
+                                        menu.isactive = True
 
                         menu_is_touched = True
                 for item in menu_list:
