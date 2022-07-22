@@ -243,7 +243,6 @@ def events_check(field,menu,menu_list):
 
                 for i in opened_windows:
                     if is_window_touched(i,pos):
-                        print("_____________________________________")
                         for x in range(len(i.buttons)):
                             button = i.buttons[x]
                             if i.text == "rows":
@@ -273,6 +272,10 @@ def events_check(field,menu,menu_list):
                                     if type(button) == Ok_button:
                                         button.confirm(i)
                                         saving(field)
+                                    elif type(button) == Exit_button:
+                                        button.exit(i)
+                                        close_menu_items(menu)
+                                        menu.isactive = True
 
                         menu_is_touched = True
                 for item in menu_list:
