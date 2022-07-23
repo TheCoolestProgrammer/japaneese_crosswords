@@ -26,7 +26,46 @@ class Field:
         self.cell_size_x = screen_width//rows
         self.cell_size_y = (screen_height-menu_height)//columns
         self.field = [[0]*rows for y in range(columns)]
+        self.menu_height = menu_height
+    def drawing(self):
+        for y in range(self.menu_height, screen_height, self.cell_size_y):
+            pygame.draw.line(screen, (0, 0, 0), (0, y), (screen_width, y), 3)
+        for x in range(0, screen_width, self.cell_size_x):
+            pygame.draw.line(screen, (0, 0, 0), (x, 0), (x, screen_height), 3)
 
+        for y in range(len(self.field)):
+            for x in range(len(self.field[y])):
+                if self.field[y][x] == 1:
+                    pos = self.coordinates_changer_from_field((x, y))
+                    pygame.draw.rect(screen, (0, 0, 0), (pos[0], pos[1], self.cell_size_x, self.cell_size_y))
+
+    def coordinates_changer_in_field(self,pos):
+        if pos[1] < self.menu_height or pos[0] < 0 or pos[0] >= self.cell_size_x * len(self.field[0]) or pos[1] >= self.cell_size_y * len(self.field):
+            return None
+        new_y = (pos[1] - self.menu_height) // self.cell_size_y
+        new_x = pos[0] // self.cell_size_x
+        return (new_x, new_y)
+
+    def coordinates_changer_from_field(self,pos):
+        if pos[0] >= len(self.field[0]) or pos[1] >= len(self.field) or pos[0] < 0 or pos[1] < 0:
+            return None
+        new_x = self.cell_size_x * pos[0]
+        new_y =self.menu_height + self.cell_size_y * pos[1]
+        return (new_x, new_y)
+
+    def field_value_changer(self,value):
+        pos = pygame.mouse.get_pos()
+        pos = self.coordinates_changer_in_field(pos)
+        if pos:
+            self.field[pos[1]][pos[0]] = value
+
+    def change_field(self, x, y):
+        new_field = [[0] * x for i in range(y)]
+        for y in range(len(self.field)):
+            for x in range(len(self.field[y])):
+                if y < len(new_field) and x < len(self.field[0]) - 1:
+                    new_field[y][x] = self.field[y][x]
+        self.field = new_field
 class Button:
     def __init__(self,x=200,y=200,width=20,height=20):
         self.x = x
@@ -35,6 +74,9 @@ class Button:
         self.height = height
         self.color = (100,100,100)
         self.type = type
+    def drawing(self):
+        pygame.draw.rect(screen, (self.color), (self.x, self.y, self.width, self.height))
+
     @staticmethod
     def create_slider_button(x,y,width,height,type="less"):
         button = Slider_button(x,y,width,height,type)
@@ -55,7 +97,7 @@ class Ok_button(Button):
         self.color = (0,200, 0)
     def confirm(self,item):
         del (opened_windows[opened_windows.index(item)])
-    def touch_button(self,pos):
+    def touch_button(self):
         return super(Ok_button, self).is_button_touched()
 class Exit_button(Button):
     def __init__(self, x, y, width, height):
@@ -97,6 +139,8 @@ class Window:
         self.isactive = False
     def is_window_touched(self,pos):
         return is_touched(self.x, self.y, self.width, self.height)
+    def drawing(self):
+        pygame.draw.rect(screen, (self.color), (self.x, self.y, self.width, self.height))
 
     @staticmethod
     def create_window_slider(text="window",width=300,height=200,x=200,y=200):
@@ -141,30 +185,16 @@ class Menu:
         self.text = text
     def is_mouse_touched(self,pos):
         return is_touched(self.x,self.y,self.width,self.height)
-def coordinates_changer_in_field(pos,field,menu):
-    if pos[1]<menu.height or pos[0]<0 or pos[0] >= field.cell_size_x*len(field.field[0]) or pos[1] >= field.cell_size_y*len(field.field):
-        return None
-    new_y = (pos[1]-menu.height)//field.cell_size_y
-    new_x = pos[0]//field.cell_size_x
-    return (new_x,new_y)
-def coordinates_changer_from_field(pos,field,menu):
-    if pos[0]>=len(field.field[0]) or pos[1]>=len(field.field) or pos[0] <0 or pos[1]<0:
-        return None
-    new_x = field.cell_size_x*pos[0]
-    new_y = menu.height+field.cell_size_y*pos[1]
-    return (new_x,new_y)
-def field_value_changer(value,field,menu):
-    pos = pygame.mouse.get_pos()
-    pos = coordinates_changer_in_field(pos, field, menu)
-    if pos:
-        field.field[pos[1]][pos[0]] = value
-def change_field(field,x,y):
-    new_field = [[0]*x for i in range(y)]
-    for y in range(len(field)):
-        for x in range(len(field[y])):
-            if y<len(new_field) and x<len(field[0])-1:
-                new_field[y][x] = field[y][x]
-    return new_field
+    def drawing(self):
+        if self.isactive:
+            pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+            surface = font.render(self.text, False, (255, 255, 255))
+            screen.blit(surface, (self.x, self.y))
+            for j in self.submenu:
+                pygame.draw.rect(screen, j.color, (j.x, j.y, j.width, j.height))
+                surface = font.render(j.text, False, (255, 255, 255))
+                screen.blit(surface, (j.x, j.y))
+
 def close_menu_items(item):
     for i in item.submenu:
         i.isactive=False
@@ -246,7 +276,6 @@ def events_check(field,menu,menu_list):
                 process_running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-
                 for i in opened_windows:
                     if is_window_touched(i,pos):
                         for x in range(len(i.buttons)):
@@ -255,10 +284,9 @@ def events_check(field,menu,menu_list):
                                 res = button.touch_button(len(field.field[0]))
                                 if res:
                                     if type(button) == Slider_button:
-                                        field.field = change_field(field.field,res,len(field.field))
+                                        field.change_field(res,len(field.field))
                                         field.cell_size_x = screen_height//len(field.field[0])
                                     elif type(button) == Exit_button:
-                                        print("___________________________")
                                         button.exit(i)
                                         close_menu_items(menu)
                                         menu.isactive = True
@@ -266,7 +294,7 @@ def events_check(field,menu,menu_list):
                                 res = button.touch_button(len(field.field))
                                 if res:
                                     if type(button) == Slider_button:
-                                        field.field = change_field(field.field, len(field.field[0]), res)
+                                        field.change_field(len(field.field[0]), res)
                                         field.cell_size_y = (screen_height - menu.height) // len(field.field)
                                     elif type(button) == Exit_button:
                                         button.exit(i)
@@ -283,7 +311,7 @@ def events_check(field,menu,menu_list):
                                         close_menu_items(menu)
                                         menu.isactive = True
                             elif i.text == "clear":
-                                res = button.touch_button(len(field.field))
+                                res = button.touch_button()
                                 if res:
                                     if type(button) == Ok_button:
                                         button.confirm(i)
@@ -314,7 +342,7 @@ def events_check(field,menu,menu_list):
                                 menu_is_touched=True
                                 break
                 if not menu_is_touched:
-                    field_value_changer(1,field,menu)
+                    field.field_value_changer(1)
             if event.button == 3:
                 for i in opened_windows:
                     if is_window_touched(i,pos):
@@ -322,7 +350,7 @@ def events_check(field,menu,menu_list):
                         break
                 if not menu_is_touched:
                     for item in menu_list:
-                        if len(item.submenu) == 0 and len(item.link)!=0:
+                        if len(item.link)!=0:
                             if item.is_mouse_touched(pos):
                                 menu_is_touched=True
                                 break
@@ -331,7 +359,8 @@ def events_check(field,menu,menu_list):
                                 menu_is_touched = True
                                 break
                 if not menu_is_touched:
-                    field_value_changer(0, field, menu)
+                    field.field_value_changer(0)
+    # проверка на зажатие
     for i in opened_windows:
         if is_window_touched(i, pos):
             menu_is_touched = True
@@ -345,46 +374,22 @@ def events_check(field,menu,menu_list):
     if not menu_is_touched:
         keys = pygame.mouse.get_pressed()
         if keys[0]:
-            field_value_changer(1, field, menu)
+            field.field_value_changer(1)
         elif keys[2]:
-            field_value_changer(0, field, menu)
-def drawing(field,menu,menu_list):
+            field.field_value_changer(0)
+def drawing(field,menu_list):
     screen.fill((255, 255, 255))
     #draw field
-    for y in range(menu.height,screen_height,field.cell_size_y):
-        pygame.draw.line(screen,(0,0,0),(0,y),(screen_width,y),3)
-    for x in range(0,screen_width,field.cell_size_x):
-        pygame.draw.line(screen,(0,0,0),(x,0),(x,screen_height),3)
-    # for x in range(0,len(field.field[0])):
-    #
-    for y in range(len(field.field)):
-        for x in range(len(field.field[y])):
-            if field.field[y][x] == 1:
-                pos = coordinates_changer_from_field((x,y),field,menu)
-                pygame.draw.rect(screen,(0,0,0),(pos[0],pos[1],field.cell_size_x,field.cell_size_y))
+    field.drawing()
+
     #draw menu
     for item in menu_list:
-        if item.isactive:
-            pygame.draw.rect(screen,item.color,(item.x,item.y,item.width,item.height))
-            surface = font.render(item.text, False, (255, 255, 255))
-            screen.blit(surface, (item.x, item.y))
-            for j in item.submenu:
-                pygame.draw.rect(screen, j.color, (j.x, j.y, j.width, j.height))
-                surface = font.render(j.text,False,(255,255,255))
-                screen.blit(surface,(j.x,j.y))
+        item.drawing()
     #draw windows
-    # for i in menu_list:
-    #     if i.isactive and len(i.link)>0 and i.link[0].isactive:
-    #         pygame.draw.rect(screen,(i.link[0].color),(i.link[0].x,i.link[0].y,i.link[0].width,i.link[0].height))
-    #         if type(i.link[0]) == Window_slider:
-    #             for x in range(len(i.link[0].buttons)):
-    #                 button = i.link[0].buttons[x]
-    #                 pygame.draw.rect(screen,(button.color),(button.x,button.y,button.width,button.height))
     for i in opened_windows:
-        pygame.draw.rect(screen, (i.color), (i.x, i.y, i.width, i.height))
+        i.drawing()
         for x in range(len(i.buttons)):
-            button = i.buttons[x]
-            pygame.draw.rect(screen, (button.color), (button.x, button.y, button.width, button.height))
+            i.buttons[x].drawing()
     pygame.display.update()
 
 def mainloop():
@@ -434,10 +439,7 @@ def mainloop():
 
     while process_running:
         events_check(field,menu,menu_list)
-        drawing(field,menu,menu_list)
-        # for i in menu_list:
-        #     print(i.isactive,end=" ")
-        # print()
+        drawing(field,menu_list)
         pygame.time.delay(fps)
 if __name__ == '__main__':
     mainloop()
