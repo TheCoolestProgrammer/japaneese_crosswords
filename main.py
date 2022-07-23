@@ -145,6 +145,8 @@ class Window:
         return is_touched(self.x, self.y, self.width, self.height)
     def drawing(self):
         pygame.draw.rect(screen, (self.color), (self.x, self.y, self.width, self.height))
+        surface = font.render(self.text, False, (255, 255, 255))
+        screen.blit(surface, (self.x, self.y))
 
     @staticmethod
     def create_window_slider(text="window",width=300,height=200,x=200,y=200,mouse_pos=None):
@@ -403,16 +405,16 @@ def drawing(field,menu_list):
     screen.fill((255, 255, 255))
     #draw field
     field.drawing()
-
-    #draw menu
-    for item in menu_list:
-        item.drawing()
     #draw windows
     for i in opened_windows:
         i.drawing()
         for x in range(len(i.buttons)):
             i.buttons[x].drawing()
+    # draw menu
+    for item in menu_list:
+        item.drawing()
     pygame.display.update()
+
 
 def mainloop():
     global process_running
