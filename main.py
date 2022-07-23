@@ -369,11 +369,14 @@ def events_check(field,menu,menu_list):
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 for j in opened_windows:
-                    j.touch_button=None
+                    j.mouse_pos=None
     # проверка на зажатие
     keys = pygame.mouse.get_pressed()
     for i in opened_windows:
         if is_window_touched(i, pos) and (keys[0] or keys[2]):
+            res = opened_windows.index(i)
+            opened_windows.insert(len(opened_windows),i)
+            del(opened_windows[res])
             button_is_touched = False
             for j in i.buttons:
                 if j.touch_button():
@@ -385,6 +388,7 @@ def events_check(field,menu,menu_list):
                 if pos !=i.mouse_pos:
                     x = i.x - (i.mouse_pos[0] -pos[0])
                     y = i.y - (i.mouse_pos[1] -pos[1])
+                    # y = pos[1]-i.height//2
                     i.__init__(i.text,i.width,i.height,x,y,pos)
             menu_is_touched = True
             break
