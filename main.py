@@ -17,7 +17,10 @@ opened_windows=[]
 def is_touched(x,y,width,height):
     pos = pygame.mouse.get_pos()
     if x < pos[0] < x + width and y < pos[1] < y + height:
-        return True
+        keys = pygame.mouse.get_pressed()
+        if keys[0]:
+            return True
+        return False
     else:
         return False
 
@@ -97,7 +100,7 @@ class Ok_button(Button):
         self.color = (0,200, 0)
     def confirm(self,item):
         del (opened_windows[opened_windows.index(item)])
-    def touch_button(self):
+    def touch_button(self,value=0):
         return super(Ok_button, self).is_button_touched()
 class Exit_button(Button):
     def __init__(self, x, y, width, height):
@@ -105,7 +108,7 @@ class Exit_button(Button):
         self.color = (200,0,0)
     def exit(self,item):
         del(opened_windows[opened_windows.index(item)])
-    def touch_button(self,pos):
+    def touch_button(self,value=0):
         return super(Exit_button, self).is_button_touched()
 class Slider_button(Button):
     def __init__(self,x,y,width,height,type):
@@ -113,7 +116,7 @@ class Slider_button(Button):
         self.type = type
     def is_button_touched(self):
         return super(Slider_button, self).is_button_touched()
-    def touch_button(self,value):
+    def touch_button(self,value=0):
         if self.is_button_touched():
             if self.type == "less":
                 value -=1
@@ -129,7 +132,7 @@ class Slider_button(Button):
 
 
 class Window:
-    def __init__(self,text="window",width=300,height=200,x=200,y=200):
+    def __init__(self,text="window",width=300,height=200,x=200,y=200,mouse_pos=None):
         self.width = width
         self.height = height
         self.x = x
@@ -137,22 +140,23 @@ class Window:
         self.text = text
         self.color = (128,128,128)
         self.isactive = False
+        self.mouse_pos=mouse_pos
     def is_window_touched(self,pos):
         return is_touched(self.x, self.y, self.width, self.height)
     def drawing(self):
         pygame.draw.rect(screen, (self.color), (self.x, self.y, self.width, self.height))
 
     @staticmethod
-    def create_window_slider(text="window",width=300,height=200,x=200,y=200):
-        window = Window_slider(text,width,height,x,y)
+    def create_window_slider(text="window",width=300,height=200,x=200,y=200,mouse_pos=None):
+        window = Window_slider(text,width,height,x,y,mouse_pos)
         return window
     @staticmethod
-    def create_window_ok(text="window",width=300,height=200,x=200,y=200):
-        window = Window_ok(text,width,height,x,y)
+    def create_window_ok(text="window",width=300,height=200,x=200,y=200,mouse_pos=None):
+        window = Window_ok(text,width,height,x,y,mouse_pos)
         return window
 class Window_ok(Window):
-    def __init__(self,text,width,height,x,y):
-        super(Window_ok, self).__init__(text,width,height,x,y)
+    def __init__(self,text,width,height,x,y,mouse_pos):
+        super(Window_ok, self).__init__(text,width,height,x,y,mouse_pos)
         self.ok_button = Button()
         self.ok_button =self.ok_button.create_ok_button((x+width)//3*2-50,(y+height)//5*4,100,20)
         self.exit = Button()
@@ -161,8 +165,8 @@ class Window_ok(Window):
     def is_window_touched(self,pos):
         return super(Window_ok,self).is_window_touched(pos)
 class Window_slider(Window):
-    def __init__(self,text,width,height,x,y):
-        super(Window_slider, self).__init__(text,width,height,x,y)
+    def __init__(self,text,width,height,x,y,mouse_pos):
+        super(Window_slider, self).__init__(text,width,height,x,y,mouse_pos)
         self.less_buton = Button()
         self.less_buton = self.less_buton.create_slider_button(x+20,y+20,width//8,height//3,"less")
         self.more_buton = Button()
@@ -301,7 +305,7 @@ def events_check(field,menu,menu_list):
                                         close_menu_items(menu)
                                         menu.isactive = True
                             elif i.text == "save":
-                                res = button.touch_button(len(field.field))
+                                res = button.touch_button()
                                 if res:
                                     if type(button) == Ok_button:
                                         button.confirm(i)
@@ -360,9 +364,26 @@ def events_check(field,menu,menu_list):
                                 break
                 if not menu_is_touched:
                     field.field_value_changer(0)
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                for j in opened_windows:
+                    j.touch_button=None
     # проверка на зажатие
+    keys = pygame.mouse.get_pressed()
     for i in opened_windows:
-        if is_window_touched(i, pos):
+        if is_window_touched(i, pos) and (keys[0] or keys[2]):
+            button_is_touched = False
+            for j in i.buttons:
+                if j.touch_button():
+                    button_is_touched = True
+                    break
+            if not button_is_touched:
+                if not i.mouse_pos:
+                    i.mouse_pos= pos
+                if pos !=i.mouse_pos:
+                    x = i.x - (i.mouse_pos[0] -pos[0])
+                    y = i.y - (i.mouse_pos[1] -pos[1])
+                    i.__init__(i.text,i.width,i.height,x,y,pos)
             menu_is_touched = True
             break
     if not menu_is_touched:
@@ -372,11 +393,12 @@ def events_check(field,menu,menu_list):
                 break
 
     if not menu_is_touched:
-        keys = pygame.mouse.get_pressed()
         if keys[0]:
             field.field_value_changer(1)
         elif keys[2]:
             field.field_value_changer(0)
+    if menu_is_touched:
+        print("____________________________")
 def drawing(field,menu_list):
     screen.fill((255, 255, 255))
     #draw field
