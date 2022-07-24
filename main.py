@@ -64,9 +64,9 @@ class Field:
 
     def change_field(self, x, y):
         new_field = [[0] * x for i in range(y)]
-        for y in range(len(self.field)):
-            for x in range(len(self.field[y])):
-                if y < len(new_field) and x < len(self.field[0]) - 1:
+        for y in range(len(new_field)):
+            for x in range(len(new_field[y])):
+                if y < len(self.field) and x < len(self.field[0]):
                     new_field[y][x] = self.field[y][x]
         self.field = new_field
 class Button:
@@ -419,8 +419,8 @@ def events_check(field,menu,menu_list):
             field.field_value_changer(1)
         elif keys[2]:
             field.field_value_changer(0)
-    if menu_is_touched:
-        print("____________________________")
+    # if menu_is_touched:
+    #   print("____________________________")
 def drawing(field,menu_list):
     screen.fill((255, 255, 255))
     #draw field
