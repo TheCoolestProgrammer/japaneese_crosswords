@@ -70,49 +70,52 @@ class Field:
                     new_field[y][x] = self.field[y][x]
         self.field = new_field
 class Button:
-    def __init__(self,x=200,y=200,width=20,height=20):
+    def __init__(self,x=200,y=200,width=20,height=20,text=""):
+        self.text = text
         self.x = x
         self.y= y
         self.width = width
         self.height = height
         self.color = (100,100,100)
-        self.type = type
+        # self.type = type
     def drawing(self):
         pygame.draw.rect(screen, (self.color), (self.x, self.y, self.width, self.height))
+        surface = font.render(self.text, False, (255, 255, 255))
+        screen.blit(surface, (self.x, self.y))
 
     @staticmethod
-    def create_slider_button(x,y,width,height,type="less"):
-        button = Slider_button(x,y,width,height,type)
+    def create_slider_button(x,y,width,height,type="less",text="<"):
+        button = Slider_button(x,y,width,height,type,text)
         return button
     @staticmethod
-    def create_exit_button(x,y,width=20,height=20):
-        button = Exit_button(x, y, width, height)
+    def create_exit_button(x,y,width=20,height=20,text="X"):
+        button = Exit_button(x, y, width, height,text)
         return button
     @staticmethod
-    def create_ok_button(x, y, width=100, height=20):
-        button = Ok_button(x, y, width, height)
+    def create_ok_button(x, y, width=100, height=20,text="OK"):
+        button = Ok_button(x, y, width, height,text)
         return button
     def is_button_touched(self):
         return is_touched(self.x, self.y, self.width, self.height)
 class Ok_button(Button):
-    def __init__(self, x, y, width, height):
-        super(Ok_button, self).__init__(x,y,width,height)
+    def __init__(self,x, y, width, height, text):
+        super(Ok_button, self).__init__(x,y,width,height,text)
         self.color = (0,200, 0)
     def confirm(self,item):
         del (opened_windows[opened_windows.index(item)])
     def touch_button(self,value=0):
         return super(Ok_button, self).is_button_touched()
 class Exit_button(Button):
-    def __init__(self, x, y, width, height):
-        super(Exit_button, self).__init__(x,y,width,height)
+    def __init__(self, x, y, width, height,text):
+        super(Exit_button, self).__init__(x,y,width,height,text)
         self.color = (200,0,0)
     def exit(self,item):
         del(opened_windows[opened_windows.index(item)])
     def touch_button(self,value=0):
         return super(Exit_button, self).is_button_touched()
 class Slider_button(Button):
-    def __init__(self,x,y,width,height,type):
-        super(Slider_button, self).__init__(x,y,width,height)
+    def __init__(self,x,y,width,height,type,text):
+        super(Slider_button, self).__init__(x,y,width,height,text)
         self.type = type
     def is_button_touched(self):
         return super(Slider_button, self).is_button_touched()
@@ -177,16 +180,17 @@ class Window_ok(Window):
         self.exit = Button()
         self.exit = self.exit.create_exit_button(x+width-20,y,20,20)
         self.buttons = [self.ok_button,self.exit]
-        self.widgets=[]
+        self.label = Label(x + 20 + width // 8 + 10, y + 20, 150, height // 3)
+        self.widgets = [self.label]
     def is_window_touched(self,pos):
         return super(Window_ok,self).is_window_touched(pos)
 class Window_slider(Window):
     def __init__(self,text,width,height,x,y,mouse_pos):
         super(Window_slider, self).__init__(text,width,height,x,y,mouse_pos)
         self.less_buton = Button()
-        self.less_buton = self.less_buton.create_slider_button(x+20,y+20,width//8,height//3,"less")
+        self.less_buton = self.less_buton.create_slider_button(x+20,y+20,width//8,height//3,"less","<")
         self.more_buton = Button()
-        self.more_buton = self.less_buton.create_slider_button(x+width-20-(width//8),y+20,width//8,height//3,"more")
+        self.more_buton = self.less_buton.create_slider_button(x+width-20-(width//8),y+20,width//8,height//3,"more",">")
         exit_button = Button()
         self.exit_button = exit_button.create_exit_button(x+width-20,y,20,20)
         self.label = Label(x+20+width//8+10, y+20,150,height//3)
@@ -436,7 +440,8 @@ def drawing(field,menu_list):
                 value = len(field.field[0])
             elif i.text == "columns":
                 value=len(field.field)
-
+            elif i.text == "clear" or i.text == "save":
+                value = "sure?"
             i.widgets[x].drawing(value)
     # draw menu
     for item in menu_list:
