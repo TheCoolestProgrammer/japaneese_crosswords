@@ -130,6 +130,19 @@ class Slider_button(Button):
         else:
             return None
 
+class Label():
+    def __init__(self, x=280, y=250, width=100, height=50):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.color = (255, 255, 255)
+        self.type = type
+        self.font = pygame.font.SysFont("Times New Roman", 30)
+    def drawing(self,value):
+        pygame.draw.rect(screen, (self.color), (self.x, self.y, self.width, self.height))
+        surface = self.font.render(str(value), False, (100, 100, 100))
+        screen.blit(surface, (self.x+50, self.y))
 
 class Window:
     def __init__(self,text="window",width=300,height=200,x=200,y=200,mouse_pos=None):
@@ -164,6 +177,7 @@ class Window_ok(Window):
         self.exit = Button()
         self.exit = self.exit.create_exit_button(x+width-20,y,20,20)
         self.buttons = [self.ok_button,self.exit]
+        self.widgets=[]
     def is_window_touched(self,pos):
         return super(Window_ok,self).is_window_touched(pos)
 class Window_slider(Window):
@@ -175,6 +189,8 @@ class Window_slider(Window):
         self.more_buton = self.less_buton.create_slider_button(x+width-20-(width//8),y+20,width//8,height//3,"more")
         exit_button = Button()
         self.exit_button = exit_button.create_exit_button(x+width-20,y,20,20)
+        self.label = Label(x+20+width//8+10, y+20,150,height//3)
+        self.widgets=[self.label]
         self.buttons = [self.less_buton,self.more_buton,self.exit_button]
     def is_window_touched(self,pos):
         return super(Window_slider,self).is_window_touched(pos)
@@ -414,6 +430,14 @@ def drawing(field,menu_list):
         i.drawing()
         for x in range(len(i.buttons)):
             i.buttons[x].drawing()
+        for x in range(len(i.widgets)):
+            value=0
+            if i.text == "rows":
+                value = len(field.field[0])
+            elif i.text == "columns":
+                value=len(field.field)
+
+            i.widgets[x].drawing(value)
     # draw menu
     for item in menu_list:
         item.drawing()
