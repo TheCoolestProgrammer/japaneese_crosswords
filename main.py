@@ -70,7 +70,7 @@ class App:
                         opened_window.__init__(opened_window.text,
                                                opened_window.width,
                                                opened_window.height, x, y, pos)
-                self.menu_is_touched = True
+                    self.menu_is_touched = True
         if not self.menu_is_touched:
             for i in self.menu_list:
                 if is_menu_touched(i, pos):
@@ -116,7 +116,7 @@ class App:
         self.opened_windows = button.exit(opened_window, self.opened_windows)
         self.menu_list[0].close_menu_items(self.menu_list[0].submenu)
     def drawing(self):
-        self.screen.fill((255,255,0))
+        self.screen.fill((255,255,255))
         self.field.drawing(self.screen, self.screen_width, self.screen_height)
         self.submenu_draw()
         self.windows_draw()

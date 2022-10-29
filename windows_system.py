@@ -92,10 +92,11 @@ class Menu:
         if self.isactive:
             if len(self.link)!=0:
                 if self.is_mouse_touched(pos):
-                    self.link[0].isactive = True
-                    opened_windows.append(self.link[0])
-                    self.close_menu_items(main_menu.submenu)
-                    self.menu_is_touched = False
+                    if self.link[0] not in opened_windows:
+                        self.link[0].isactive = True
+                        opened_windows.append(self.link[0])
+                        self.close_menu_items(main_menu.submenu)
+                        self.menu_is_touched = False
 
             else:
                 for j in self.submenu:
