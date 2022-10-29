@@ -24,6 +24,11 @@ class App:
                         self.opened_windows = i.touch_menu(pos,self.menu_list[0],self.opened_windows)
                     for opened_window in self.opened_windows:
                         if is_window_touched(opened_window, pos):
+                            # windows switching
+                            res = self.opened_windows.index(opened_window)
+                            self.opened_windows.insert(len(self.opened_windows), opened_window)
+                            del (self.opened_windows[res])
+                            # windows actions
                             for x in range(len(opened_window.buttons)):
                                 button = opened_window.buttons[x]
                                 if button.is_button_touched():
@@ -37,6 +42,7 @@ class App:
                                     elif opened_window.text == "clear":
                                         self.clear_window_action(opened_window,button)
                             self.menu_is_touched = True
+
                     if not self.menu_is_touched:
                         self.field.field = self.field.field_value_changer(1)
             elif event.type == pygame.MOUSEBUTTONUP:
@@ -45,30 +51,26 @@ class App:
                         j.mouse_pos = None
 
         keys = pygame.mouse.get_pressed()
-        for opened_window in self.opened_windows:
-            # windows switching
-            if is_window_touched(opened_window, pos) and (keys[0] or keys[2]):
-                res = self.opened_windows.index(opened_window)
-                self.opened_windows.insert(len(self.opened_windows), opened_window)
-                del (self.opened_windows[res])
-                button_is_touched = False
-                for j in opened_window.buttons:
-                    if j.touch_button():
-                        button_is_touched = True
-                        break
-                # windows moving
-                if not button_is_touched:
+        # for opened_window in self.opened_windows:
+        if len(self.opened_windows)!=0:
+            opened_window = self.opened_windows[-1]
+            button_is_touched = False
+
+            for j in opened_window.buttons:
+                if j.touch_button():
+                    button_is_touched = True
+                    break
+            if not button_is_touched:
+                if opened_window.is_window_touched(pos):
                     if not opened_window.mouse_pos:
                         opened_window.mouse_pos = pos
                     if pos != opened_window.mouse_pos:
                         x = opened_window.x - (opened_window.mouse_pos[0] - pos[0])
                         y = opened_window.y - (opened_window.mouse_pos[1] - pos[1])
-                        # y = pos[1]-i.height//2
                         opened_window.__init__(opened_window.text,
                                                opened_window.width,
                                                opened_window.height, x, y, pos)
                 self.menu_is_touched = True
-                break
         if not self.menu_is_touched:
             for i in self.menu_list:
                 if is_menu_touched(i, pos):
@@ -114,7 +116,6 @@ class App:
         self.opened_windows = button.exit(opened_window, self.opened_windows)
         self.menu_list[0].close_menu_items(self.menu_list[0].submenu)
     def drawing(self):
-        # self.screen.fill((0, 0, 0))
         self.screen.fill((255,255,0))
         self.field.drawing(self.screen, self.screen_width, self.screen_height)
         self.submenu_draw()
